@@ -1,0 +1,21 @@
+[package]
+name = "clickhouse-utils"
+version = "0.1.0"
+edition = "2024"
+
+[features]
+default = []
+fastnum = ["fastnum/serde"]
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+clickhouse = { version = "0.13.3", features = ["rustls-tls", "uuid"] }
+md5 = "0.8.0"
+tracing = { version = "0.1", features = ["log"] }
+
+# Optional dependencies
+fastnum = { version = "0.7", features = ["serde"], optional = true }
+
+[dev-dependencies]
+# We need tokio for the examples
+tokio = { version = "1.39.0", features = ["rt-multi-thread"] }
