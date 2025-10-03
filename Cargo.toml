@@ -2,6 +2,11 @@
 name = "clickhouse-utils"
 version = "0.1.0"
 edition = "2024"
+repository = "https://github.com/GreeFine/clickhouse-utils"
+license = "MIT"
+authors = ["GreeFine <grefinee@gmail.com>"]
+description = "Utilities for working with Clickhouse"
+keywords = ["clickhouse", "utils", "migration", "serde"]
 
 [features]
 default = []
