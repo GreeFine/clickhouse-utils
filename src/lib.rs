@@ -34,15 +34,10 @@
 //!
 //! ## Serde
 //!
-//! Serde is used to serialize and deserialize types to and from Clickhouse.
+//! Serialize and Deserialize common types for Clickhouse.
 //!
-//! ### Fastnum D256
-//!
-//! Fastnum D256 is used to serialize and deserialize D256 data to and from Clickhouse.
-//!
-//! ### Map
-//!
-//! Map is used to serialize and deserialize Map<String, String> data to and from Clickhouse.
+//! - Std Hashmap of <String, String>
+//! - Fastnum : decimal D256
 //!
 //! ## Examples
 //!
