@@ -1,52 +1,64 @@
-use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-/// Serde serializer/deserializer for fastnum::decimal::D256 with a clickhouse Decimal256(25)
 #[cfg(feature = "fastnum")]
-pub mod fastnum_decimal_25 {
+pub mod fastnum {
     use super::*;
 
-    use fastnum::decimal::D256;
-    use fastnum::{bint::UInt, dec256};
+    #[cfg(feature = "fastnum")]
+    use ::fastnum::{
+        bint::UInt,
+        decimal::{Context, Decimal as FastnumDecimal, Sign},
+    };
+    use serde::de::Error as _;
 
-    const FIXED_EXPONENT: i16 = 25;
+    pub struct Decimal<const E: i16, const S: usize>;
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<D256, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let bytes: [u8; 32] = Deserialize::deserialize(deserializer)?;
+    /// Serde serializer/deserializer for fastnum::decimal with a clickhouse Decimal<FIXED_EXPONENT, N>
+    ///
+    /// N is the number of internal 64 bits words, for example a D256 is a Decimal<X, 4>  
+    /// DECIMAL_PLACE is the number of digits after the decimal point
+    #[cfg(feature = "fastnum")]
+    impl<const DECIMAL_PLACE: i16, const N: usize> Decimal<DECIMAL_PLACE, N> {
+        pub fn deserialize<'de, D>(deserializer: D) -> Result<FastnumDecimal<N>, D::Error>
+        where
+            D: Deserializer<'de>,
+        {
+            let bytes: [u8; 32] = Deserialize::deserialize(deserializer)?;
 
-        // Convert the [u8; 32] into [u64; 4] by chunking and using from_le_bytes
-        let mut uint = UInt::from_radix_le(&bytes, 256)
-            .ok_or(D::Error::custom("failed to deserialize uint from bytes"))?;
+            // Convert the [u8; 32] into [u64; 4] by chunking and using from_le_bytes
+            let mut uint = UInt::from_radix_le(&bytes, 256)
+                .ok_or(D::Error::custom("failed to deserialize uint from bytes"))?;
 
-        // We receive the number scaled to the fixed exponent defined in the schema
-        uint /= UInt::from_u16(10u16).pow((FIXED_EXPONENT as u16).into());
+            // We receive the number scaled to the fixed exponent defined in the schema
+            uint /= UInt::from_u16(10u16).pow((DECIMAL_PLACE as u16).into());
 
-        let value = D256::from_parts(
-            UInt::from_le(uint),
-            -FIXED_EXPONENT as i32,
-            fastnum::decimal::Sign::Plus,
-            fastnum::decimal::Context::default(),
-        );
-        Ok(value)
-    }
+            let value = FastnumDecimal::from_parts(
+                UInt::from_le(uint),
+                -DECIMAL_PLACE as i32,
+                Sign::Plus,
+                Context::default(),
+            );
+            Ok(value)
+        }
 
-    pub fn serialize<S: Serializer>(value: &D256, serializer: S) -> Result<S::Ok, S::Error> {
-        // Scale the value to match the fixed exponent defined in the schema
-        let mut value = value.rescale(FIXED_EXPONENT);
-        // Transform the fractional part to have significant zeros, so we have them in the value.digits()
-        value *= dec256!(10).pow(FIXED_EXPONENT.into());
+        pub fn serialize<S: Serializer>(
+            value: &FastnumDecimal<N>,
+            serializer: S,
+        ) -> Result<S::Ok, S::Error> {
+            // Scale the value to match the fixed exponent defined in the schema
+            let mut value = value.rescale(DECIMAL_PLACE);
+            // Transform the fractional part to have significant zeros, so we have them in the value.digits()
+            value *= FastnumDecimal::from_u16(10u16).pow((DECIMAL_PLACE as u16).into());
 
-        let mut digits_le: Vec<u8> = value.digits().to_radix_le(256);
+            let mut digits_le: Vec<u8> = value.digits().to_radix_le(256);
 
-        let padding_bytes = vec![0; 32 - digits_le.len()];
-        digits_le.extend(padding_bytes);
+            let padding_bytes = vec![0; 32 - digits_le.len()];
+            digits_le.extend(padding_bytes);
 
-        // We want to serialize a bytes not the vector struct
-        let exact_bytes: [u8; 32] = digits_le.try_into().unwrap();
-        exact_bytes.serialize(serializer)
+            // We want to serialize a bytes not the vector struct
+            let exact_bytes: [u8; 32] = digits_le.try_into().unwrap();
+            exact_bytes.serialize(serializer)
+        }
     }
 }
 

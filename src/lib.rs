@@ -37,7 +37,7 @@
 //! Serialize and Deserialize common types for Clickhouse.
 //!
 //! - Std Hashmap of <String, String>
-//! - Fastnum : decimal D256
+//! - Fastnum : any decimals with a fix size scale mandated by the clickhouse schema
 //!
 //! ## Examples
 //!
@@ -49,11 +49,25 @@
 //!
 //! #[derive(Debug, Serialize, Deserialize, clickhouse::Row)]
 //! pub struct SomeTable {
-//!   #[serde(with = "clickhouse_utils::serde::fastnum_d256")]
+//!   #[serde(with = "clickhouse_utils::serde::fastnum::Decimal::<25, {256 / 64}>")]
 //!   pub decimal: D256,
 //!   #[serde(with = "clickhouse_utils::serde::map")]
 //!   pub attributes: HashMap<String, String>,
 //! }
+//!
+//!
+//! For the decimal fastnum::D256, we use:
+//! - Decimal with { 256 / 64 } or Uint<4>
+//! - 25 decimals, that should corelate with you clickhouse schema
+//!
+//! The database schema used:
+//! ```sql
+//! CREATE TABLE clickhouse_utils (
+//!   decimal Decimal256(25),
+//!   attributes Map(String, String),
+//! ) ENGINE = MergeTree()
+//! ORDER BY (decimal)
+//! ```
 //! ```
 
 mod error;
