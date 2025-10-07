@@ -1,8 +1,9 @@
 use serde::de::Error as _;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+/// Serde serializer/deserializer for fastnum::decimal::D256 with a clickhouse Decimal256(25)
 #[cfg(feature = "fastnum")]
-pub mod fastnum_d256 {
+pub mod fastnum_decimal_25 {
     use super::*;
 
     use fastnum::decimal::D256;
@@ -49,6 +50,7 @@ pub mod fastnum_d256 {
     }
 }
 
+/// Serde serializer/deserializer for HashMap<String, String> for a clickhouse Map(String, String)
 pub mod map {
     use std::collections::HashMap;
 
