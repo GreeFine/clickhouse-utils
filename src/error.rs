@@ -1,5 +1,9 @@
 #[derive(Debug)]
-pub struct ClickhouseUtilsError(String, Option<Box<dyn std::error::Error>>);
+#[must_use]
+pub struct ClickhouseUtilsError(
+    String,
+    Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
+);
 
 pub type Result<T> = std::result::Result<T, ClickhouseUtilsError>;
 
@@ -8,7 +12,7 @@ impl ClickhouseUtilsError {
         ClickhouseUtilsError(message, None)
     }
 
-    pub fn into_inner(self) -> Option<Box<dyn std::error::Error>> {
+    pub fn into_inner(self) -> Option<Box<dyn std::error::Error + Send + Sync + 'static>> {
         self.1
     }
 
@@ -23,7 +27,8 @@ impl std::fmt::Display for ClickhouseUtilsError {
     }
 }
 
-impl std::error::Error for ClickhouseUtilsError {}
+// We need to constrain the error to be Send + Sync + 'static to use it in eyre
+impl std::error::Error for ClickhouseUtilsError where ClickhouseUtilsError: Send + Sync + 'static {}
 
 impl From<std::io::Error> for ClickhouseUtilsError {
     fn from(error: std::io::Error) -> Self {
