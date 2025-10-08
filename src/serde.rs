@@ -9,7 +9,6 @@ pub mod fastnum {
         bint::UInt,
         decimal::{Context, Decimal as FastnumDecimal, Sign},
     };
-    use serde::de::Error as _;
 
     pub struct Decimal<const E: i16, const S: usize>;
 
@@ -23,11 +22,7 @@ pub mod fastnum {
         where
             D: Deserializer<'de>,
         {
-            let bytes: [u8; 32] = Deserialize::deserialize(deserializer)?;
-
-            // Convert the [u8; 32] into [u64; 4] by chunking and using from_le_bytes
-            let mut uint = UInt::from_radix_le(&bytes, 256)
-                .ok_or(D::Error::custom("failed to deserialize uint from bytes"))?;
+            let mut uint: UInt<N> = Deserialize::deserialize(deserializer)?;
 
             // We receive the number scaled to the fixed exponent defined in the schema
             uint /= UInt::from_u16(10u16).pow((DECIMAL_PLACE as u16).into());
@@ -50,14 +45,7 @@ pub mod fastnum {
             // Transform the fractional part to have significant zeros, so we have them in the value.digits()
             value *= FastnumDecimal::from_u16(10u16).pow((DECIMAL_PLACE as u16).into());
 
-            let mut digits_le: Vec<u8> = value.digits().to_radix_le(256);
-
-            let padding_bytes = vec![0; 32 - digits_le.len()];
-            digits_le.extend(padding_bytes);
-
-            // We want to serialize a bytes not the vector struct
-            let exact_bytes: [u8; 32] = digits_le.try_into().unwrap();
-            exact_bytes.serialize(serializer)
+            value.digits().serialize(serializer)
         }
     }
 }

@@ -54,6 +54,7 @@
 //!   #[serde(with = "clickhouse_utils::serde::map")]
 //!   pub attributes: HashMap<String, String>,
 //! }
+//! ```
 //!
 //!
 //! For the decimal fastnum::D256, we use:
@@ -67,7 +68,6 @@
 //!   attributes Map(String, String),
 //! ) ENGINE = MergeTree()
 //! ORDER BY (decimal)
-//! ```
 //! ```
 
 mod error;
